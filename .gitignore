@@ -1,0 +1,7 @@
+# 编译生成文件
+build/
+bin/
+log/log.txt
+
+# IDE 配置文件
+.vscode/
