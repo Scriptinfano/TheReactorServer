@@ -1,0 +1,91 @@
+execve("./bin/epollclient", ["./bin/epollclient", "172.25.65.121", "9999"], 0x7ffdba05b700 /* 43 vars */) = 0
+brk(NULL)                               = 0x5c776d069000
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x75f619133000
+access("/etc/ld.so.preload", R_OK)      = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/root/develop/TheReactorServer/libs/glibc-hwcaps/x86-64-v4/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/root/develop/TheReactorServer/libs/glibc-hwcaps/x86-64-v4/", 0x7fff9dc05f00, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/root/develop/TheReactorServer/libs/glibc-hwcaps/x86-64-v3/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/root/develop/TheReactorServer/libs/glibc-hwcaps/x86-64-v3/", 0x7fff9dc05f00, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/root/develop/TheReactorServer/libs/glibc-hwcaps/x86-64-v2/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/root/develop/TheReactorServer/libs/glibc-hwcaps/x86-64-v2/", 0x7fff9dc05f00, 0) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/root/develop/TheReactorServer/libs/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+newfstatat(AT_FDCWD, "/root/develop/TheReactorServer/libs/", {st_mode=S_IFDIR|0755, st_size=4096, ...}, 0) = 0
+openat(AT_FDCWD, "/etc/ld.so.cache", O_RDONLY|O_CLOEXEC) = 3
+fstat(3, {st_mode=S_IFREG|0644, st_size=57899, ...}) = 0
+mmap(NULL, 57899, PROT_READ, MAP_PRIVATE, 3, 0) = 0x75f619124000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libstdc++.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=2592224, ...}) = 0
+mmap(NULL, 2609472, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x75f618e00000
+mmap(0x75f618e9d000, 1343488, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x9d000) = 0x75f618e9d000
+mmap(0x75f618fe5000, 552960, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1e5000) = 0x75f618fe5000
+mmap(0x75f61906c000, 57344, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x26b000) = 0x75f61906c000
+mmap(0x75f61907a000, 12608, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x75f61907a000
+close(3)                                = 0
+openat(AT_FDCWD, "/root/develop/TheReactorServer/libs/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libgcc_s.so.1", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\0\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=183024, ...}) = 0
+mmap(NULL, 185256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x75f6190f6000
+mmap(0x75f6190fa000, 147456, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x4000) = 0x75f6190fa000
+mmap(0x75f61911e000, 16384, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x75f61911e000
+mmap(0x75f619122000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x2b000) = 0x75f619122000
+close(3)                                = 0
+openat(AT_FDCWD, "/root/develop/TheReactorServer/libs/libc.so.6", O_RDONLY|O_CLOEXEC) = -1 ENOENT (No such file or directory)
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libc.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\220\243\2\0\0\0\0\0"..., 832) = 832
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+fstat(3, {st_mode=S_IFREG|0755, st_size=2125328, ...}) = 0
+pread64(3, "\6\0\0\0\4\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0@\0\0\0\0\0\0\0"..., 784, 64) = 784
+mmap(NULL, 2170256, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x75f618a00000
+mmap(0x75f618a28000, 1605632, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x28000) = 0x75f618a28000
+mmap(0x75f618bb0000, 323584, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1b0000) = 0x75f618bb0000
+mmap(0x75f618bff000, 24576, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x1fe000) = 0x75f618bff000
+mmap(0x75f618c05000, 52624, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_ANONYMOUS, -1, 0) = 0x75f618c05000
+close(3)                                = 0
+openat(AT_FDCWD, "/lib/x86_64-linux-gnu/libm.so.6", O_RDONLY|O_CLOEXEC) = 3
+read(3, "\177ELF\2\1\1\3\0\0\0\0\0\0\0\0\3\0>\0\1\0\0\0\0\0\0\0\0\0\0\0"..., 832) = 832
+fstat(3, {st_mode=S_IFREG|0644, st_size=952616, ...}) = 0
+mmap(NULL, 950296, PROT_READ, MAP_PRIVATE|MAP_DENYWRITE, 3, 0) = 0x75f618d17000
+mmap(0x75f618d27000, 520192, PROT_READ|PROT_EXEC, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x10000) = 0x75f618d27000
+mmap(0x75f618da6000, 360448, PROT_READ, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0x8f000) = 0x75f618da6000
+mmap(0x75f618dfe000, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_FIXED|MAP_DENYWRITE, 3, 0xe7000) = 0x75f618dfe000
+close(3)                                = 0
+mmap(NULL, 8192, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x75f6190f4000
+mmap(NULL, 12288, PROT_READ|PROT_WRITE, MAP_PRIVATE|MAP_ANONYMOUS, -1, 0) = 0x75f6190f1000
+arch_prctl(ARCH_SET_FS, 0x75f6190f1740) = 0
+set_tid_address(0x75f6190f1a10)         = 427826
+set_robust_list(0x75f6190f1a20, 24)     = 0
+rseq(0x75f6190f2060, 0x20, 0, 0x53053053) = 0
+mprotect(0x75f618bff000, 16384, PROT_READ) = 0
+mprotect(0x75f618dfe000, 4096, PROT_READ) = 0
+mprotect(0x75f619122000, 4096, PROT_READ) = 0
+mprotect(0x75f61906c000, 45056, PROT_READ) = 0
+mprotect(0x5c776ca5e000, 4096, PROT_READ) = 0
+mprotect(0x75f61916b000, 8192, PROT_READ) = 0
+prlimit64(0, RLIMIT_STACK, NULL, {rlim_cur=8192*1024, rlim_max=RLIM64_INFINITY}) = 0
+munmap(0x75f619124000, 57899)           = 0
+futex(0x75f61907a7bc, FUTEX_WAKE_PRIVATE, 2147483647) = 0
+getrandom("\xc7\x30\xee\xc5\x4f\xb0\x37\xac", 8, GRND_NONBLOCK) = 8
+brk(NULL)                               = 0x5c776d069000
+brk(0x5c776d08a000)                     = 0x5c776d08a000
+openat(AT_FDCWD, "./etc/config.txt", O_RDONLY) = 3
+read(3, "LOGLEVEL=DEBUG\nSHOULDLOGTOFILE=W"..., 8191) = 50
+fstat(1, {st_mode=S_IFCHR|0620, st_rdev=makedev(0x88, 0x4), ...}) = 0
+write(1, "LOGLEVEL \351\205\215\347\275\256\351\241\271\345\212\240\350\275\275\345\256\214\346\210\220\357\274"..., 79) = 79
+read(3, "", 8191)                       = 0
+write(1, "SHOUDLDLOGTOLEVEL \351\205\215\347\275\256\351\241\271\345\212\240\350\275"..., 72) = 72
+close(3)                                = 0
+socket(AF_INET, SOCK_STREAM, IPPROTO_IP) = 3
+connect(3, {sa_family=AF_INET, sin_port=htons(9999), sin_addr=inet_addr("172.25.65.121")}, 16) = 0
+write(1, "Connect successful.\n", 20)   = 20
+sendto(3, "\36\0\0\0this is data which number is"..., 34, 0, NULL, 0) = 34
+write(1, "data has been sent, the strlen o"..., 44) = 44
+write(1, "\345\215\263\345\260\206\345\274\200\345\247\213\350\257\273\345\217\226\346\234\215\345\212\241\347\253\257\347\232\204\345\233"..., 43) = 43
+recvfrom(3, "$\0\0\0", 4, 0, NULL, NULL) = 4
+recvfrom(3, "reply:this is data which number "..., 36, 0, NULL, NULL) = 36
+write(1, "len=36--received reply msg from "..., 76) = 76
+recvfrom(3, 0x7fff9dc064c4, 4, 0, NULL, NULL) = ? ERESTARTSYS (To be restarted if SA_RESTART is set)
+--- SIGINT {si_signo=SIGINT, si_code=SI_KERNEL} ---
++++ killed by SIGINT +++

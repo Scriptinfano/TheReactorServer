@@ -1,8 +1,10 @@
 #pragma once
-#include<string>
-class Buffer{
+#include <string>
+#include <cstddef>
+class Buffer
+{
 private:
-    std::string buf_;//用于存放数据
+    std::string buf_; // 用于存放数据
 
 public:
     Buffer();
