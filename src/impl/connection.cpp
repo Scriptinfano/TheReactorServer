@@ -3,7 +3,7 @@
 #include "connection.hpp"
 #include "log.hpp"
 #include <sys/syscall.h>
-#include"public.hpp"
+#include "public.hpp"
 Connection::Connection(std::shared_ptr<EventLoop> loop, int fd, InetAddress *clientaddr) : loop_(loop), disconnect_(false)
 {
     clientsock_ = std::make_unique<Socket>(fd);
@@ -91,16 +91,27 @@ void Connection::readCallBack()
                 // 可以把以下代码封装在Buffer类中，还可以支持固定长度、指定报文长度和分隔符等多种格式。
                 int len;
                 memcpy(&len, inputBuffer_.getData(), 4); // 从inputbuffer中获取报文头部。
-                // 如果inputbuffer中的数据量小于报文头部，说明inputbuffer中的报文内容不完整。
-                if (inputBuffer_.getSize() < len + 4)
+                // 在这里判断一下len是否是合法的数字，而不是其他非法字符，以防止发送方发送的数据不符合协议导致服务端崩溃
+
+                if (len <= 0)
                 {
-                    break;
+                    // 既然报文没加头部，直接把inputBuffer_中的数据全部取出来，然后清空inputBuffer_
+                    std::string message(inputBuffer_.getData(), inputBuffer_.getSize());
+                    inputBuffer_.erase(0, inputBuffer_.getSize());
+                    processCallBack_(shared_from_this(), message);
                 }
-                std::string message(inputBuffer_.getData() + 4, len); // 从inputbuffer中获取一个报文。
-                inputBuffer_.erase(0, len + 4);                       // 从inputbuffer中删除刚才已获取的报文。
-                logger.logMessage(NORMAL, __FILE__, __LINE__, "thread %d recv from client(fd=%d,ip=%s,port=%u):%s", syscall(SYS_gettid), getFd(), getIP().c_str(), getPort(), message.c_str());
-                // 底下这个回调函数代表TCPServer对于客户端数据的处理回调函数
-                processCallBack_(shared_from_this(), message);
+                else
+                {
+                    // 如果inputbuffer中的数据量小于报文头部长度和数据量长度之和，说明inputbuffer中的报文内容不完整，需要退出循环，继续等到下一次读取到数据。
+                    if (inputBuffer_.getSize() < len + 4)
+                    {
+                        break;
+                    }
+                    std::string message(inputBuffer_.getData() + 4, len); // 从inputbuffer中获取一个整个报文中的数据部分。
+                    inputBuffer_.erase(0, len + 4);                       // 从inputbuffer中删除刚才读取的报文。
+                    logger.logMessage(NORMAL, __FILE__, __LINE__, "thread %d recv from client(fd=%d,ip=%s,port=%u):%s", syscall(SYS_gettid), getFd(), getIP().c_str(), getPort(), message.c_str());
+                    processCallBack_(shared_from_this(), message); // processCallBack()是TCPServer对于客户端数据的处理回调函数
+                }
             }
             break;
         }
@@ -139,26 +150,27 @@ void Connection::setProcessCallBack(std::function<void(SharedConnectionPointer, 
 }
 void Connection::send(std::string data)
 {
-    //这段代码如果由工作线程执行，工作线程将处理之后的数据放到自定义缓冲区中，然后下次写事件就绪之后，才发送出去
-    //这段代码也可能由从线程执行，这是在没有工作线程的情况下
+    // 这段代码如果由工作线程执行，工作线程将处理之后的数据放到自定义缓冲区中，然后下次写事件就绪之后，才发送出去
+    // 这段代码也可能由从线程执行，这是在没有工作线程的情况下
     if (disconnect_ == true)
     {
         logger.logMessage(DEBUG, __FILE__, __LINE__, "客户端连接已断开，Connection::send直接返回", syscall(SYS_gettid));
         return;
     }
-    //因为前面做了优化，导致从线程在没有工作线程的情况下会直接处理业务数据，所以如果是从线程直接处理业务数据，则处理完成之后可以安全的操作自定义输出缓冲区，因为此时不涉及多线程安全问题，如果不是从线程，就需要异步事件通知机制了
-    //所以这里判断当前线程是从线程还是工作线程
-    if(loop_->isIOThread()){
-        //loop_中记录着从线程的线程id，这个函数会比较当前线程的id是否和从线程的id相同，因为这段代码可能被工作线程执行，这样就会导致loop_记载的线程id和当前获取的线程id不一样
-        //进入这个if就代表目前这段代码是从线程在执行，从线程可以直接安全的操控自定义输出缓冲区，所以直接执行sendInIOThread函数即可
+    // 因为前面做了优化，导致从线程在没有工作线程的情况下会直接处理业务数据，所以如果是从线程直接处理业务数据，则处理完成之后可以安全的操作自定义输出缓冲区，因为此时不涉及多线程安全问题，如果不是从线程，就需要异步事件通知机制了
+    // 所以这里判断当前线程是从线程还是工作线程
+    if (loop_->isIOThread())
+    {
+        // loop_中记录着从线程的线程id，这个函数会比较当前线程的id是否和从线程的id相同，因为这段代码可能被工作线程执行，这样就会导致loop_记载的线程id和当前获取的线程id不一样
+        // 进入这个if就代表目前这段代码是从线程在执行，从线程可以直接安全的操控自定义输出缓冲区，所以直接执行sendInIOThread函数即可
         logger.logMessage(DEBUG, __FILE__, __LINE__, "没有工作线程，从线程将直接处理之后的数据加上报头之后放入自定义输出缓冲区");
         sendInIOThread(data);
     }
     else
     {
-        //工作线程这里还要通知从线程将处理之后的数据放到自定义输出缓冲区中
-        logger.logMessage(DEBUG, __FILE__, __LINE__,"当前工作线程是%d,即将把填充自定义输出缓冲区的任务放入从线程的任务队列中,当前数据为%s",syscall(SYS_gettid),data.c_str());
-        loop_->addTaskToQueue(std::bind(&Connection::sendInIOThread, this, std::placeholders::_1),data);
+        // 工作线程这里还要通知从线程将处理之后的数据放到自定义输出缓冲区中
+        logger.logMessage(DEBUG, __FILE__, __LINE__, "当前工作线程是%d,即将把填充自定义输出缓冲区的任务放入从线程的任务队列中,当前数据为%s", syscall(SYS_gettid), data.c_str());
+        loop_->addTaskToQueue(std::bind(&Connection::sendInIOThread, this, std::placeholders::_1), data);
     }
 }
 void Connection::setSendCompleteCallBack(std::function<void(SharedConnectionPointer)> sendCompleteCallBack)
@@ -166,9 +178,10 @@ void Connection::setSendCompleteCallBack(std::function<void(SharedConnectionPoin
     sendCompleteCallBack_ = sendCompleteCallBack;
 }
 // TODO sendInIOThread函数的参数和当初传入时的不一致，需要解决
-void Connection::sendInIOThread(std::string data){
-    logger.logMessage(DEBUG, __FILE__, __LINE__, "即将把处理之后的数据加上报头放入自定义输出缓冲区，当前时间点为%s，未加报头的数据为%s", getCurrentTimeInNanoseconds().c_str(),data.c_str());
+void Connection::sendInIOThread(std::string data)
+{
+    logger.logMessage(DEBUG, __FILE__, __LINE__, "即将把处理之后的数据加上报头放入自定义输出缓冲区，当前时间点为%s，未加报头的数据为%s", getCurrentTimeInNanoseconds().c_str(), data.c_str());
     outputBuffer_.appendWithHead(data);
-    logger.logMessage(DEBUG, __FILE__, __LINE__, "已完成将处理之后的数据加上报头并放入自定义输出缓冲区，当前时间点为%s，当前线程id为%d，当前输出输出缓冲区中的内容为%s", getCurrentTimeInNanoseconds().c_str(), syscall(SYS_gettid),outputBuffer_.getData());
+    logger.logMessage(DEBUG, __FILE__, __LINE__, "已完成将处理之后的数据加上报头并放入自定义输出缓冲区，当前时间点为%s，当前线程id为%d，当前输出输出缓冲区中的内容为%s", getCurrentTimeInNanoseconds().c_str(), syscall(SYS_gettid), outputBuffer_.getData());
     clientchannel_->registerWriteEvent();
 }

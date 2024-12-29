@@ -9,11 +9,11 @@ class EventLoop;
 class Channel
 {
 private:
-    int fd_ = -1;          // Channel和fd是一对一的关系
-    bool inepoll_ = false; // 标记Channel是否已添加到epoll的红黑树上，如果没有添加，则调用epoll_ct的时候添加，否则用EPOLL_CTL_MOD
-    uint32_t events_ = 0;  // 需要监视的事件类型，listenfd和clientfd需要监视EPOLLIN，clientfd还需要监视EPOLLOUT，当写就绪事件发生时，便将写缓冲区的数据一次性发送出去
-    uint32_t revents_ = 0; // 已经就绪的事件
-    std::shared_ptr<EventLoop> loop_;           // channel需要通知事件循环对象根据自己承载的信息更新epoll树
+    int fd_ = -1;                         // Channel和fd是一对一的关系
+    bool inepoll_ = false;                // 标记Channel是否已添加到epoll的红黑树上，如果没有添加，则调用epoll_ct的时候添加，否则用EPOLL_CTL_MOD
+    uint32_t events_ = 0;                 // 需要监视的事件类型，listenfd和clientfd需要监视EPOLLIN，clientfd还需要监视EPOLLOUT，当写就绪事件发生时，便将写缓冲区的数据一次性发送出去
+    uint32_t revents_ = 0;                // 已经就绪的事件
+    std::shared_ptr<EventLoop> loop_;     // channel需要通知事件循环对象根据自己承载的信息更新epoll树
     std::function<void()> readcallback_;  // 遇到可读事件的回调函数
     std::function<void()> closecallback_; // 客户端连接关闭时的回调处理函数：Connection::closeCallBack()
     std::function<void()> errorcallback_; // 在处理处理客户端连接可读事件过程中发生其他错误的回调处理函数：Connection::errorCallBack()
@@ -24,7 +24,7 @@ public:
     @param fd 该Channel需要关联的文件描述符是哪一个
     @param sock 该Channel需要关联的文件描述符对应的封装套接字是哪一个
     */
-    Channel(std::shared_ptr<EventLoop>loop, int fd);
+    Channel(std::shared_ptr<EventLoop> loop, int fd);
     ~Channel();
 
     /*
