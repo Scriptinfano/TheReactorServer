@@ -10,13 +10,17 @@ void Buffer::append(const char *data, size_t size)
 {
     buf_.append(data, size); // append(const char* s, size_t n)：将指针 s 指向的字符数组中的前 n 个字符附加到当前字符串末尾
 }
+void Buffer::append(std::string data)
+{
+    buf_.append(data);
+}
 size_t Buffer::getSize()
 {
     return buf_.size();
 }
 const char *Buffer::getData()
 {
-    return buf_.data();
+    return buf_.c_str();
 }
 void Buffer::clear()
 {

@@ -41,4 +41,10 @@ public:
     @param n 要从指定位置之后删除多少个字节
     */
     void erase(size_t pos, size_t n);
+
+    /*
+    直接将数据附加到缓冲区中，不加报头
+    @param data 要追加的数据
+    */
+    void append(std::string data);
 };

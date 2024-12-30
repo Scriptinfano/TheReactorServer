@@ -33,7 +33,7 @@ public:
     @param conn 处理哪一个连接发来的数据
     @param message 原始数据
     */
-    void processCallBack(SharedConnectionPointer conn, std::string message);
+    void processCallBack(SharedConnectionPointer conn, std::string message,bool hasHead);
 
     /*
     当Connection将数据都加到输入缓冲区中之后，回调这个函数，相当于通知TCPServer
@@ -48,5 +48,5 @@ public:
     /*
     工作线程的主代码，如果没有工作线程，则这个函数的代码将由从线程执行
     */
-    void wokerThreadBehavior(SharedConnectionPointer conn, std::string message);
+    void wokerThreadBehavior(SharedConnectionPointer conn, std::string message,bool hasHead);
 };
