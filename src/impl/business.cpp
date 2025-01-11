@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <iostream>
 BusinessServerInterface::BusinessServerInterface(const std::string &ip, in_port_t port, int threadnum, int workthreadnum)
+BusinessServerInterface::BusinessServerInterface(const std::string &ip, in_port_t port, int threadnum, int workthreadnum)
 {
     tcpserver_ = std::make_unique<TCPServer>(ip, port, threadnum);
     threadpool_ = std::make_unique<ThreadPool>(workthreadnum, "worker_thread");
@@ -14,7 +15,14 @@ BusinessServerInterface::BusinessServerInterface(const std::string &ip, in_port_
     tcpserver_->setErrorCallBack(std::bind(&BusinessServerInterface::errorCallBack, this, std::placeholders::_1));
     tcpserver_->setProcessCallBack(std::bind(&BusinessServerInterface::processCallBack, this, std::placeholders::_1, std::placeholders::_2));
     tcpserver_->setSendCompleteCallBack(std::bind(&BusinessServerInterface::sendCompleteCallBack, this, std::placeholders::_1));
+    tcpserver_->setAcceptCallBack(std::bind(&BusinessServerInterface::acceptCallBack, this, std::placeholders::_1));
+    tcpserver_->setCloseCallBack(std::bind(&BusinessServerInterface::closeCallBack, this, std::placeholders::_1));
+    tcpserver_->setEpollTimeoutCallBack(std::bind(&BusinessServerInterface::epollTimeoutCallBack, this, std::placeholders::_1));
+    tcpserver_->setErrorCallBack(std::bind(&BusinessServerInterface::errorCallBack, this, std::placeholders::_1));
+    tcpserver_->setProcessCallBack(std::bind(&BusinessServerInterface::processCallBack, this, std::placeholders::_1, std::placeholders::_2));
+    tcpserver_->setSendCompleteCallBack(std::bind(&BusinessServerInterface::sendCompleteCallBack, this, std::placeholders::_1));
 }
+void BusinessServerInterface::processCallBack(SharedConnectionPointer conn, std::string message)
 void BusinessServerInterface::processCallBack(SharedConnectionPointer conn, std::string message)
 {
     // 这个判断是为了适应如果没有工作线程，那就必须由从线程自己来负责处理数据并发送数据的工作
@@ -32,6 +40,18 @@ void BusinessServerInterface::processCallBack(SharedConnectionPointer conn, std:
                              { wokerThreadBehavior(conn, message); });
         logger.logMessage(DEBUG, __FILE__, __LINE__, "EchoServer threadpool addTask to task queue, sub thread id=%d", syscall(SYS_gettid));
     }
+}
+
+void EchoServer::acceptCallBack(SharedConnectionPointer conn)
+{
+}
+
+void EchoServer::closeCallBack(SharedConnectionPointer conn)
+{
+}
+
+void EchoServer::errorCallBack(SharedConnectionPointer conn)
+{
 }
 
 void EchoServer::acceptCallBack(SharedConnectionPointer conn)
