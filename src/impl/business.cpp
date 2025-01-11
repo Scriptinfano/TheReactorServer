@@ -14,12 +14,6 @@ BusinessServerInterface::BusinessServerInterface(const std::string &ip, in_port_
     tcpserver_->setErrorCallBack(std::bind(&BusinessServerInterface::errorCallBack, this, std::placeholders::_1));
     tcpserver_->setProcessCallBack(std::bind(&BusinessServerInterface::processCallBack, this, std::placeholders::_1, std::placeholders::_2));
     tcpserver_->setSendCompleteCallBack(std::bind(&BusinessServerInterface::sendCompleteCallBack, this, std::placeholders::_1));
-    tcpserver_->setAcceptCallBack(std::bind(&BusinessServerInterface::acceptCallBack, this, std::placeholders::_1));
-    tcpserver_->setCloseCallBack(std::bind(&BusinessServerInterface::closeCallBack, this, std::placeholders::_1));
-    tcpserver_->setEpollTimeoutCallBack(std::bind(&BusinessServerInterface::epollTimeoutCallBack, this, std::placeholders::_1));
-    tcpserver_->setErrorCallBack(std::bind(&BusinessServerInterface::errorCallBack, this, std::placeholders::_1));
-    tcpserver_->setProcessCallBack(std::bind(&BusinessServerInterface::processCallBack, this, std::placeholders::_1, std::placeholders::_2));
-    tcpserver_->setSendCompleteCallBack(std::bind(&BusinessServerInterface::sendCompleteCallBack, this, std::placeholders::_1));
 }
 void BusinessServerInterface::processCallBack(SharedConnectionPointer conn, std::string message)
 {
