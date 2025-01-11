@@ -4,7 +4,6 @@
 #include <unistd.h>
 #include <iostream>
 BusinessServerInterface::BusinessServerInterface(const std::string &ip, in_port_t port, int threadnum, int workthreadnum)
-BusinessServerInterface::BusinessServerInterface(const std::string &ip, in_port_t port, int threadnum, int workthreadnum)
 {
     tcpserver_ = std::make_unique<TCPServer>(ip, port, threadnum);
     threadpool_ = std::make_unique<ThreadPool>(workthreadnum, "worker_thread");
@@ -22,7 +21,6 @@ BusinessServerInterface::BusinessServerInterface(const std::string &ip, in_port_
     tcpserver_->setProcessCallBack(std::bind(&BusinessServerInterface::processCallBack, this, std::placeholders::_1, std::placeholders::_2));
     tcpserver_->setSendCompleteCallBack(std::bind(&BusinessServerInterface::sendCompleteCallBack, this, std::placeholders::_1));
 }
-void BusinessServerInterface::processCallBack(SharedConnectionPointer conn, std::string message)
 void BusinessServerInterface::processCallBack(SharedConnectionPointer conn, std::string message)
 {
     // 这个判断是为了适应如果没有工作线程，那就必须由从线程自己来负责处理数据并发送数据的工作
