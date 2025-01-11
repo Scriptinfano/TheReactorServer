@@ -85,4 +85,8 @@ void HttpServer::epollTimeoutCallBack(EventLoop *loop)
 void HttpServer::wokerThreadBehavior(SharedConnectionPointer conn, std::string message)
 {
     // 处理http请求
+    logger.logMessage(DEBUG, __FILE__, __LINE__, "HttpServer::workerThreadBehavior() called, worker thread id=%d", syscall(SYS_gettid));
+    message = "httpserver:" + message;
+    // 有可能是工作线程或者从线程执行下面这段代码
+    conn->send(message);
 }
