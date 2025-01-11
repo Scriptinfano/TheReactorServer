@@ -46,18 +46,6 @@ void EchoServer::errorCallBack(SharedConnectionPointer conn)
 {
 }
 
-void EchoServer::acceptCallBack(SharedConnectionPointer conn)
-{
-}
-
-void EchoServer::closeCallBack(SharedConnectionPointer conn)
-{
-}
-
-void EchoServer::errorCallBack(SharedConnectionPointer conn)
-{
-}
-
 void EchoServer::sendCompleteCallBack(SharedConnectionPointer conn)
 {
 }
