@@ -35,7 +35,7 @@ Reactor 模式是一种事件驱动的处理架构，将事件监听和事件处
 ### 实现异步通知线程事件循环
 #### 为什么要异步通知事件循环
 ![总体结构](./res/architecture.png)
-工作线程需要将处理之后的数据写入到自定义输出缓冲区，当系统级别的输出缓冲区变为可写之后就会触发可写事件，从线程就会回调到Connection中实际调用send的函数中，而send函数从自定义缓冲区中取数据的过程和工作线程将数据写入自定义输出缓冲区的过程可能造成多线程对共享区的同时访问问题，所以需要设计一套互斥机制来保护自定义输出缓冲区，加锁解锁在这个场景下太过频繁，消耗性能，所以我们采用eventfd来实现线程间的通信
+工作线程需要将处理之后的数据写入到自定义输出缓冲区，当系统级别的输出缓冲区变为可写之后就会触发可写事件，从线程就会回调到Connection中实际调用send的函数中，而从线程从自定义缓冲区中取数据的过程和工作线程将数据写入自定义输出缓冲区的过程可能造成多线程对共享区的同时访问问题，所以需要设计一套互斥机制来保护自定义输出缓冲区，加锁解锁在这个场景下太过频繁，消耗性能，所以我们采用eventfd来实现线程间的通信
 #### 采用什么方法通知
 通知线程的方法：条件变量、信号量、socket、管道、eventfd
 
@@ -57,7 +57,62 @@ SEMAPHORE: 最好配合EFD_NONBLOCK一起使用，加上这个标志位之后，
 
 我们将eventfd加入epoll之后，只要eventfd不为0就会触发读事件
 #### 具体实现方法
-工作线程将
+具体实现步骤如下：
+
+1. **创建 eventfd 并加入 epoll 监听**
+   
+   在每个从线程的事件循环中，创建一个 eventfd，并将其加入 epoll 监听。这样，eventfd 就能像普通的 socket fd 一样被 epoll_wait 监控。
+
+   ```C++
+   // 创建 eventfd
+   int efd = eventfd(0, EFD_NONBLOCK | EFD_CLOEXEC);
+   // 将 efd 加入 epoll 监听
+   epoll_ctl(epollfd, EPOLL_CTL_ADD, efd, &event);
+   ```
+
+2. **工作线程通知子线程**
+   
+   当工作线程处理完业务数据后，需要通知从线程有新任务（如有数据需要发送）。此时，工作线程向 eventfd 写入数据（通常写入8字节的整数），触发子线程 epoll_wait 返回。
+
+   ```C++
+   uint64_t one = 1;
+   write(efd, &one, sizeof(one)); // 通知子线程
+   ```
+
+3. **子线程响应 eventfd 事件**
+   
+   子线程的 epoll_wait 检测到 eventfd 可读事件后，说明有新任务到来。此时，子线程从 eventfd 读取数据（清除可读状态），然后从任务队列中取出任务并执行。
+
+   ```C++
+   if (eventfd 可读) {
+       uint64_t cnt;
+       read(efd, &cnt, sizeof(cnt)); // 清除事件
+       // 处理任务队列中的任务
+       doPendingTasks();
+   }
+   ```
+
+4. **任务队列的使用**
+   
+   工作线程不能直接操作子线程的事件循环和缓冲区，而是将任务（如 Connection::sendInIOThread）封装为函数对象，加入子线程的任务队列。子线程在收到 eventfd 通知后，依次执行队列中的任务。
+
+   ```C++
+   // 工作线程添加任务
+   loop_->addTaskToQueue(std::bind(&Connection::sendInIOThread, this, data));
+   // 子线程在事件循环中处理
+   void EventLoop::doPendingTasks() {
+       std::queue<std::function<void()>> tasks;
+       {
+           std::lock_guard<std::mutex> lock(mutex_);
+           tasks.swap(taskQueue_);
+       }
+       while (!tasks.empty()) {
+           tasks.front()();
+           tasks.pop();
+       }
+   }
+   ```
+
 ### 正确使用智能指针
 - 如果资源的生命周期难以确定，则应该使用shared_ptr来管理
 - 类自己所拥有的资源用unique_ptr来管理，在类被销毁的时候，将会自动释放资源
@@ -134,7 +189,7 @@ void EventLoop::handleWakeUp()
 }
 ```
 经过调试验证后发现，function函数对象的模版参数不能为空，原本以为调用fn之后内部是可以检测到bind函数调用时绑定的数据的，但是并不能，我采用了以下几种方案解决问题：  
-1. 将function函数对象的类型改为function<std::string>，string本身就记录了数据的长度，免去了之前传入const char *还要再额外传入数据长度的问题
+1. 将function函数对象的类型改为function\<std::string\>，string本身就记录了数据的长度，免去了之前传入const char *还要再额外传入数据长度的问题
 2. 函数对象类型更改之后面临调用时需要传入参数的问题，而data并不在handleWakeUp函数中，经过查gpt之后，得知传入任意参数即可，调用时会忽略手动传入的参数，采用bind时绑定的参数，事实证明仍然不行
 3. 此时我觉得靠bind将参数绑定到函数对象中并不靠谱，决定另辟蹊径，将任务队列的元素类型改为键值对，键存放函数对象，值存放实际的数据，这样就能确保一定能将要传入的数据和函数对象对应起来  
 ```C++
