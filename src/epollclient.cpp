@@ -8,10 +8,11 @@
 #include <thread>
 #include "myio.hpp"
 #include "public.hpp"
+#include "chacha20.hpp"
 using namespace std;
 
 static const int BUFFERSIZE = 1024;
-static const string KEY = "TheReactorServerSecretKey";
+static const string KEY = "TheReactorServerSecretKey1234567"; // 32 bytes
 
 void sendThread(int sockfd)
 {
@@ -24,10 +25,10 @@ void sendThread(int sockfd)
         }
 
         // 1. 加密消息
-        xorEncryptDecrypt(line, KEY);
+        string encrypted = ChaCha20::encrypt(line, KEY);
 
         // 2. 构造报文
-        int len = line.length();
+        int len = encrypted.length();
         char tmp[BUFFERSIZE] = {0};
         
         // 防止溢出，虽然这里 BUFFERSIZE 是 1024，但还是稍微注意一下
@@ -37,7 +38,7 @@ void sendThread(int sockfd)
         }
 
         memcpy(tmp, &len, sizeof(int));
-        memcpy(tmp + sizeof(int), line.c_str(), len);
+        memcpy(tmp + sizeof(int), encrypted.data(), len);
 
         // 3. 发送
         mysend(sockfd, tmp, sizeof(int) + len);
@@ -62,7 +63,7 @@ void recvThread(int sockfd)
              continue; // 或者退出
         }
 
-        std::vector<char> recv_buf(len + 1, 0);
+        std::vector<char> recv_buf(len, 0); // 注意：这里不需要 +1，因为我们处理的是二进制数据（包含nonce）
         ret = myrecv(sockfd, recv_buf.data(), len);
         if (ret <= 0)
         {
@@ -70,12 +71,12 @@ void recvThread(int sockfd)
             exit(0);
         }
 
-        string msg = recv_buf.data();
+        string msg(recv_buf.data(), len);
         
         // 解密消息
-        xorEncryptDecrypt(msg, KEY);
+        string decrypted = ChaCha20::decrypt(msg, KEY);
         
-        cout << msg << endl;
+        cout << decrypted << endl;
     }
 }
 

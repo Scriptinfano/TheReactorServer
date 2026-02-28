@@ -1,6 +1,7 @@
 #include "business.hpp"
 #include "log.hpp"
 #include "public.hpp"
+#include "chacha20.hpp"
 #include <unistd.h>
 #include <iostream>
 #ifdef __linux__
@@ -68,18 +69,18 @@ void EchoServer::wokerThreadBehavior(SharedConnectionPointer conn, std::string m
 {
     logger.logMessage(DEBUG, __FILE__, __LINE__, "EchoServer::workerThreadBehavior() called, worker thread id=%d", get_tid());
     
-    // 1. 解密消息 (XOR key: "TheReactorServerSecretKey")
-    std::string key = "TheReactorServerSecretKey";
-    xorEncryptDecrypt(message, key);
+    // 1. 解密消息
+    std::string key = "TheReactorServerSecretKey1234567"; // 32 bytes
+    std::string decrypted = ChaCha20::decrypt(message, key);
     
-    std::cout << "Received from " << conn->getIP() << ":" << conn->getPort() << " -> " << message << std::endl;
+    std::cout << "Received from " << conn->getIP() << ":" << conn->getPort() << " -> " << decrypted << std::endl;
 
     // 2. 构造回复消息（这里改为广播模式，模拟群聊）
-    std::string reply = "[" + conn->getIP() + ":" + std::to_string(conn->getPort()) + "]: " + message;
+    std::string reply = "[" + conn->getIP() + ":" + std::to_string(conn->getPort()) + "]: " + decrypted;
     
     // 3. 加密回复消息
-    xorEncryptDecrypt(reply, key);
+    std::string encrypted_reply = ChaCha20::encrypt(reply, key);
 
     // 4. 广播给所有连接（排除发送者）
-    tcpserver_->broadcast(reply, conn->getFd());
+    tcpserver_->broadcast(encrypted_reply, conn->getFd());
 }
