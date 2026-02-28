@@ -5,10 +5,80 @@
 #include <cstring>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <thread>
 #include "myio.hpp"
+#include "public.hpp"
 using namespace std;
 
 static const int BUFFERSIZE = 1024;
+static const string KEY = "TheReactorServerSecretKey";
+
+void sendThread(int sockfd)
+{
+    string line;
+    while (getline(cin, line))
+    {
+        if (line == "exit" || line == "quit")
+        {
+            break;
+        }
+
+        // 1. 加密消息
+        xorEncryptDecrypt(line, KEY);
+
+        // 2. 构造报文
+        int len = line.length();
+        char tmp[BUFFERSIZE] = {0};
+        
+        // 防止溢出，虽然这里 BUFFERSIZE 是 1024，但还是稍微注意一下
+        if (len + sizeof(int) > BUFFERSIZE) {
+            cerr << "Message too long!" << endl;
+            continue;
+        }
+
+        memcpy(tmp, &len, sizeof(int));
+        memcpy(tmp + sizeof(int), line.c_str(), len);
+
+        // 3. 发送
+        mysend(sockfd, tmp, sizeof(int) + len);
+    }
+}
+
+void recvThread(int sockfd)
+{
+    while (true)
+    {
+        //先把报头读取出来
+        int len;
+        ssize_t ret = recv(sockfd, &len, sizeof(int), 0);
+        if (ret <= 0)
+        {
+            cout << "Disconnected from server." << endl;
+            exit(0);
+        }
+
+        if (len <= 0 || len > 65535) { // 简单的长度检查
+             cerr << "Invalid message length: " << len << endl;
+             continue; // 或者退出
+        }
+
+        std::vector<char> recv_buf(len + 1, 0);
+        ret = myrecv(sockfd, recv_buf.data(), len);
+        if (ret <= 0)
+        {
+            cout << "Disconnected from server." << endl;
+            exit(0);
+        }
+
+        string msg = recv_buf.data();
+        
+        // 解密消息
+        xorEncryptDecrypt(msg, KEY);
+        
+        cout << msg << endl;
+    }
+}
+
 int main(int argc, char *argv[])
 {
     if (argc != 3)
@@ -20,7 +90,6 @@ int main(int argc, char *argv[])
 
     int sockfd;
     struct sockaddr_in servaddr;
-    string buf;
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0)
@@ -47,33 +116,14 @@ int main(int argc, char *argv[])
         return -1;
     }
 
-    cout << "Connect successful." << endl;
+    cout << "Connect successful. You can start typing messages." << endl;
 
-    for (int i = 0; i < 1; i++)
-    {
-        char buffer[BUFFERSIZE] = {0};
-        snprintf(buffer, sizeof(buffer), "this is data which number is %d", i + 1);
-        
-        char tmp[BUFFERSIZE] = {0};
-        int len = strlen(buffer);
-        memcpy(tmp, &len, sizeof(int));
-        memcpy(tmp + sizeof(int), buffer, strlen(buffer));
-        mysend(sockfd, tmp, sizeof(int) + len);
-        cout << "data has been sent, the strlen of data is" << strlen(buffer) << endl;
-    }
+    // 启动发送线程和接收线程
+    std::thread t1(sendThread, sockfd);
+    std::thread t2(recvThread, sockfd);
 
-    cout << "即将开始读取服务端的回复消息" << endl;
-    while (true)
-    {
-        //先把报头读取出来
-        int len;
-        myrecv(sockfd, &len, sizeof(int));
-        cout << "len=" << len<<"--";
-        std::vector<char> recv_buf(len + 1, 0); // 使用 vector 替代 VLA
-        myrecv(sockfd, recv_buf.data(), len);
-        cout << "received reply msg from server:" << recv_buf.data() << endl;
-    }
-    sleep(100);//睡过100s再断开连接
+    t1.join();
+    t2.join();
 
     close(sockfd);
     return 0;

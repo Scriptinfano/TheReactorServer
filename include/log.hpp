@@ -24,7 +24,8 @@ enum LogLevel
     NORMAL,
     WARNING,
     ERROR,
-    FATAL
+    FATAL,
+    OFF
 };
 
 /*

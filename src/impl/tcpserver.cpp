@@ -83,6 +83,19 @@ void TCPServer::epollTimeoutCallBack(EventLoop *loop)
     }
 }
 
+void TCPServer::broadcast(const std::string& message, int senderFd)
+{
+    for (auto& pair : connectionMapper_)
+    {
+        int fd = pair.first;
+        SharedConnectionPointer conn = pair.second;
+        if (fd != senderFd)
+        {
+            conn->send(message);
+        }
+    }
+}
+
 void TCPServer::setAcceptCallBack(std::function<void(SharedConnectionPointer)> acceptCallBack)
 {
     acceptCallBack_ = acceptCallBack;

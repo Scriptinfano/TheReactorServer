@@ -67,7 +67,19 @@ void EchoServer::epollTimeoutCallBack(EventLoop *loop)
 void EchoServer::wokerThreadBehavior(SharedConnectionPointer conn, std::string message)
 {
     logger.logMessage(DEBUG, __FILE__, __LINE__, "EchoServer::workerThreadBehavior() called, worker thread id=%d", get_tid());
-    message = "reply:" + message;
-    // 有可能是工作线程或者从线程执行下面这段代码
-    conn->send(message);
+    
+    // 1. 解密消息 (XOR key: "TheReactorServerSecretKey")
+    std::string key = "TheReactorServerSecretKey";
+    xorEncryptDecrypt(message, key);
+    
+    std::cout << "Received from " << conn->getIP() << ":" << conn->getPort() << " -> " << message << std::endl;
+
+    // 2. 构造回复消息（这里改为广播模式，模拟群聊）
+    std::string reply = "[" + conn->getIP() + ":" + std::to_string(conn->getPort()) + "]: " + message;
+    
+    // 3. 加密回复消息
+    xorEncryptDecrypt(reply, key);
+
+    // 4. 广播给所有连接（排除发送者）
+    tcpserver_->broadcast(reply, conn->getFd());
 }

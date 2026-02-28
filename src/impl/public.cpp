@@ -48,3 +48,21 @@ std::string getCurrentTimeInNanoseconds()
 
     return oss.str();
 }
+
+void xorEncryptDecrypt(char* data, size_t len, const std::string& key)
+{
+    if (key.empty()) return;
+    for (size_t i = 0; i < len; ++i)
+    {
+        data[i] ^= key[i % key.length()];
+    }
+}
+
+void xorEncryptDecrypt(std::string& data, const std::string& key)
+{
+    if (key.empty()) return;
+    for (size_t i = 0; i < data.length(); ++i)
+    {
+        data[i] ^= key[i % key.length()];
+    }
+}

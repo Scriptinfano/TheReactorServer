@@ -1,7 +1,17 @@
 # 编译生成文件
 build/
+build_release/
 bin/
 log/log.txt
+log/*.slog
 
 # IDE 配置文件
 .vscode/
+.idea/
+
+# macOS 系统文件
+.DS_Store
+
+# 打包生成文件
+release_package/
+*.tar.gz

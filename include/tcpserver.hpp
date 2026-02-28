@@ -60,6 +60,11 @@ public:
     */
     void epollTimeoutCallBack(EventLoop *loop);
 
+    /*
+    广播消息给所有连接的客户端（除了发送者，如果senderFd为-1则广播给所有人）
+    */
+    void broadcast(const std::string& message, int senderFd = -1);
+
     void setAcceptCallBack(std::function<void(SharedConnectionPointer)> acceptCallBack);
     void setCloseCallBack(std::function<void(SharedConnectionPointer)> closeCallBack);
     void setErrorCallBack(std::function<void(SharedConnectionPointer)> errorCallBack);

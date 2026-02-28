@@ -9,13 +9,14 @@
 
 // 类中的私有静态成员变量必须在cpp文件中先声明一遍，然后才能在静态成员函数中访问
 // 在 C++ 中，静态成员变量属于类本身而不是任何具体的对象。由于它们在类中只是声明而没有定义，因此需要在类外面对它们进行定义，这就相当于为静态成员变量分配存储空间并指定其初始值。
-const char *Logger::num2strLevelMap[] = {"DEBUG", "NORMAL", "WARNING", "ERROR", "FATAL"};
+const char *Logger::num2strLevelMap[] = {"DEBUG", "NORMAL", "WARNING", "ERROR", "FATAL", "OFF"};
 const std::map<std::string, LogLevel> Logger::str2numLevelMap = {
     {"DEBUG", LogLevel::DEBUG},
     {"NORMAL", LogLevel::NORMAL},
     {"WARNING", LogLevel::WARNING},
     {"ERROR", LogLevel::ERROR},
-    {"FATAL", LogLevel::FATAL}};
+    {"FATAL", LogLevel::FATAL},
+    {"OFF", LogLevel::OFF}};
 const char *Logger::pname_ = nullptr;
 ////////////////////////////////////////////////////////////////////
 
@@ -68,19 +69,30 @@ Logger::Logger()
             std::cout << std::endl;
         }
         if (line.rfind("LOGLEVEL", 0) == 0)
+    {
+        auto pos = line.find('=');
+        if (pos != std::string::npos)
         {
-            auto pos = line.find('=');
-            if (pos != std::string::npos)
-            {
-                stringLogLevel_ = line.substr(pos + 1);
-                // 去掉前后空格
-                stringLogLevel_.erase(0, stringLogLevel_.find_first_not_of(" \t"));
-                stringLogLevel_.erase(stringLogLevel_.find_last_not_of(" \t") + 1);
-            }
-            numLogLevel_ = str2numLevelMap.at(stringLogLevel_);
-            std::cout << "LOGLEVEL 配置项加载完成，其值为";
-            std::cout << "字符串形式=" << stringLogLevel_ << "," << "数字形式=" << numLogLevel_ << std::endl;
+            stringLogLevel_ = line.substr(pos + 1);
+            // 去掉前后空格
+            stringLogLevel_.erase(0, stringLogLevel_.find_first_not_of(" \t"));
+            stringLogLevel_.erase(stringLogLevel_.find_last_not_of(" \t") + 1);
         }
+        
+        auto it = str2numLevelMap.find(stringLogLevel_);
+        if (it != str2numLevelMap.end()) {
+             numLogLevel_ = it->second;
+        } else {
+             // 只有当 stringLogLevel_ 不为空且不是有效级别时才报错
+             if (!stringLogLevel_.empty()) {
+                 std::cerr << "Invalid LOGLEVEL: " << stringLogLevel_ << ", defaulting to DEBUG" << std::endl;
+             }
+             numLogLevel_ = DEBUG;
+        }
+
+        std::cout << "LOGLEVEL 配置项加载完成，其值为";
+        std::cout << "字符串形式=" << stringLogLevel_ << "," << "数字形式=" << numLogLevel_ << std::endl;
+    }
     }
 }
 
@@ -119,7 +131,7 @@ bool Logger::shouldLogToFile(LogLevel level)
 void Logger::logMessage(LogLevel level, const char *file, int line, const char *format, ...)
 {
 
-    if (level < DEBUG || level > FATAL)
+    if (level < DEBUG || level > OFF)
     {
         this->logMessage(FATAL, __FILE__, __LINE__, "invalid log level:%s", num2strLevelMap[level]);
         exit(-1);
@@ -128,6 +140,7 @@ void Logger::logMessage(LogLevel level, const char *file, int line, const char *
     // 仅输出规定级别以上的日志
     if (level < numLogLevel_)
         return;
+    if (numLogLevel_ == OFF) return;
 
     char fixBuffer[512];
     std::time_t currentTime = std::time(nullptr);
