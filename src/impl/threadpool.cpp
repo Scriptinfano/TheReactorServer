@@ -1,8 +1,11 @@
 #include "threadpool.hpp"
 #include "log.hpp"
 #include <unistd.h>
-#include <sys/syscall.h>
 #include <vector>
+#include "public.hpp"
+#ifdef __linux__
+#include <sys/syscall.h>
+#endif
 ThreadPool::ThreadPool(size_t threadnum, std::string threadtype) : threadtype_(threadtype), stop_(false)
 {
     // 启动threadnum个线程，每个线程都阻塞在条件变量上

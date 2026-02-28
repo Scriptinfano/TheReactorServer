@@ -91,16 +91,21 @@ void Connection::readCallBack()
             while (true)
             {
                 // 可以把以下代码封装在Buffer类中，还可以支持固定长度、指定报文长度和分隔符等多种格式。
+                if (inputBuffer_.getSize() < 4) 
+                {
+                    break;
+                }
+                
                 int len;
                 memcpy(&len, inputBuffer_.getData(), 4); // 从inputbuffer中获取报文头部。
                 // 在这里判断一下len是否是合法的数字，而不是其他非法字符，以防止发送方发送的数据不符合协议导致服务端崩溃
 
                 if (len <= 0)
                 {
-                    // 既然报文没加头部，直接把inputBuffer_中的数据全部取出来，然后清空inputBuffer_
-                    std::string message(inputBuffer_.getData(), inputBuffer_.getSize());
+                    logger.logMessage(ERROR, __FILE__, __LINE__, "invalid packet length: %d", len);
+                    // 如果长度非法，可能需要断开连接或者清空缓冲区
                     inputBuffer_.erase(0, inputBuffer_.getSize());
-                    processCallBack_(shared_from_this(), message);
+                    break;
                 }
                 else
                 {
