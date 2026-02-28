@@ -19,6 +19,9 @@ private:
     std::queue<std::pair<std::function<void(std::string)>,std::string>> taskQueue_; // 这个成员变量是专门给工作线程用的，因为要解决多线程互斥问题，所以工作线程在将处理之后的数据加到自定义输出缓冲区之后要靠eventfd唤醒从线程来发送数据
     std::mutex mutex_;                            // 用于对taskQueue_加锁的互斥锁
     int wakeupfd_;                                // 用于唤醒事件循环的eventfd
+#ifdef __APPLE__
+    int wakeupFdWrite_ = -1;
+#endif
     std::unique_ptr<Channel> wakeChannel_;        // 这个Channel用来监听wakeupfd的可读事件，可读事件触发代表被工作线程通知可以发送输出缓冲区中的数据了 
 
 public:

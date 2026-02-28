@@ -1,8 +1,11 @@
 #include "business.hpp"
 #include "log.hpp"
-#include <sys/syscall.h>
+#include "public.hpp"
 #include <unistd.h>
 #include <iostream>
+#ifdef __linux__
+#include <sys/syscall.h>
+#endif
 EchoServer::EchoServer(const std::string &ip, in_port_t port, int threadnum, int workthreadnum)
 {
     tcpserver_ = std::make_unique<TCPServer>(ip, port, threadnum);
@@ -48,9 +51,9 @@ void EchoServer::processCallBack(SharedConnectionPointer conn, std::string messa
     else
     {
         // 有工作线程的情况
-        logger.logMessage(DEBUG, __FILE__, __LINE__, "EchoServer::processCallBack() called, sub thread id=%d", syscall(SYS_gettid));
+        logger.logMessage(DEBUG, __FILE__, __LINE__, "EchoServer::processCallBack() called, sub thread id=%d", get_tid());
         threadpool_->addTask(std::bind(&EchoServer::wokerThreadBehavior, this, conn, message));
-        logger.logMessage(DEBUG, __FILE__, __LINE__, "EchoServer threadpool addTask to task queue, sub thread id=%d", syscall(SYS_gettid));
+        logger.logMessage(DEBUG, __FILE__, __LINE__, "EchoServer threadpool addTask to task queue, sub thread id=%d", get_tid());
     }
 }
 
@@ -63,7 +66,7 @@ void EchoServer::epollTimeoutCallBack(EventLoop *loop)
 }
 void EchoServer::wokerThreadBehavior(SharedConnectionPointer conn, std::string message)
 {
-    logger.logMessage(DEBUG, __FILE__, __LINE__, "EchoServer::workerThreadBehavior() called, worker thread id=%d", syscall(SYS_gettid));
+    logger.logMessage(DEBUG, __FILE__, __LINE__, "EchoServer::workerThreadBehavior() called, worker thread id=%d", get_tid());
     message = "reply:" + message;
     // 有可能是工作线程或者从线程执行下面这段代码
     conn->send(message);

@@ -2,7 +2,9 @@
 #include <string.h>
 #include "connection.hpp"
 #include "log.hpp"
+#ifdef __linux__
 #include <sys/syscall.h>
+#endif
 #include "public.hpp"
 Connection::Connection(std::shared_ptr<EventLoop> loop, int fd, InetAddress *clientaddr) : loop_(loop), disconnect_(false)
 {
@@ -109,7 +111,7 @@ void Connection::readCallBack()
                     }
                     std::string message(inputBuffer_.getData() + 4, len); // 从inputbuffer中获取一个整个报文中的数据部分。
                     inputBuffer_.erase(0, len + 4);                       // 从inputbuffer中删除刚才读取的报文。
-                    logger.logMessage(NORMAL, __FILE__, __LINE__, "thread %d recv from client(fd=%d,ip=%s,port=%u):%s", syscall(SYS_gettid), getFd(), getIP().c_str(), getPort(), message.c_str());
+                    logger.logMessage(NORMAL, __FILE__, __LINE__, "thread %d recv from client(fd=%d,ip=%s,port=%u):%s", get_tid(), getFd(), getIP().c_str(), getPort(), message.c_str());
                     processCallBack_(shared_from_this(), message); // processCallBack()是TCPServer对于客户端数据的处理回调函数
                 }
             }
@@ -133,7 +135,7 @@ void Connection::writeCallBack()
     // 把outputBuffer_中的数据发送出去
     logger.logMessage(DEBUG, __FILE__, __LINE__, "即将调用底层send函数，当前时间点为%s", getCurrentTimeInNanoseconds().c_str());
     int writen = ::send(getFd(), outputBuffer_.getData(), outputBuffer_.getSize(), 0);
-    logger.logMessage(DEBUG, __FILE__, __LINE__, "完成调用底层send将数据发出，当前时间点为%s，当前线程id为%d", getCurrentTimeInNanoseconds().c_str(), syscall(SYS_gettid));
+    logger.logMessage(DEBUG, __FILE__, __LINE__, "完成调用底层send将数据发出，当前时间点为%s，当前线程id为%d", getCurrentTimeInNanoseconds().c_str(), get_tid());
     if (writen > 0)
         outputBuffer_.erase(0, writen);
     // 这里还要判断发送缓冲区中是否还有数据，如果没有数据了，则不应该再关注写事件
@@ -154,7 +156,7 @@ void Connection::send(std::string data)
     // 这段代码也可能由从线程执行，这是在没有工作线程的情况下
     if (disconnect_ == true)
     {
-        logger.logMessage(DEBUG, __FILE__, __LINE__, "客户端连接已断开，Connection::send直接返回", syscall(SYS_gettid));
+        logger.logMessage(DEBUG, __FILE__, __LINE__, "客户端连接已断开，Connection::send直接返回", get_tid());
         return;
     }
     // 因为前面做了优化，导致从线程在没有工作线程的情况下会直接处理业务数据，所以如果是从线程直接处理业务数据，则处理完成之后可以安全的操作自定义输出缓冲区，因为此时不涉及多线程安全问题，如果不是从线程，就需要异步事件通知机制了
@@ -169,7 +171,7 @@ void Connection::send(std::string data)
     else
     {
         // 工作线程这里还要通知从线程将处理之后的数据放到自定义输出缓冲区中
-        logger.logMessage(DEBUG, __FILE__, __LINE__, "当前工作线程是%d,即将把填充自定义输出缓冲区的任务放入从线程的任务队列中,当前数据为%s", syscall(SYS_gettid), data.c_str());
+        logger.logMessage(DEBUG, __FILE__, __LINE__, "当前工作线程是%d,即将把填充自定义输出缓冲区的任务放入从线程的任务队列中,当前数据为%s", get_tid(), data.c_str());
         loop_->addTaskToQueue(std::bind(&Connection::sendInIOThread, this, std::placeholders::_1), data);
     }
 }
@@ -182,6 +184,6 @@ void Connection::sendInIOThread(std::string data)
 {
     logger.logMessage(DEBUG, __FILE__, __LINE__, "即将把处理之后的数据加上报头放入自定义输出缓冲区，当前时间点为%s，未加报头的数据为%s", getCurrentTimeInNanoseconds().c_str(), data.c_str());
     outputBuffer_.appendWithHead(data);
-    logger.logMessage(DEBUG, __FILE__, __LINE__, "已完成将处理之后的数据加上报头并放入自定义输出缓冲区，当前时间点为%s，当前线程id为%d，当前输出输出缓冲区中的内容为%s", getCurrentTimeInNanoseconds().c_str(), syscall(SYS_gettid), outputBuffer_.getData());
+    logger.logMessage(DEBUG, __FILE__, __LINE__, "已完成将处理之后的数据加上报头并放入自定义输出缓冲区，当前时间点为%s，当前线程id为%d，当前输出输出缓冲区中的内容为%s", getCurrentTimeInNanoseconds().c_str(), get_tid(), outputBuffer_.getData());
     clientchannel_->registerWriteEvent();
 }

@@ -3,8 +3,11 @@
 #include "channel.hpp"
 #include "connection.hpp"
 #include "log.hpp"
-#include <sys/syscall.h>
+#include "public.hpp"
 #include <unistd.h>
+#ifdef __linux__
+#include <sys/syscall.h>
+#endif
 TCPServer::TCPServer(const std::string &ip, const in_port_t port, int threadnum)
 {
     threadnum_ = threadnum;
@@ -73,9 +76,11 @@ void TCPServer::sendCompleteCallBack(SharedConnectionPointer conn)
 }
 void TCPServer::epollTimeoutCallBack(EventLoop *loop)
 {
-    logger.logMessage(NORMAL, __FILE__, __LINE__, "thread %d start to handle epolltimeout situation", syscall(SYS_gettid));
+    logger.logMessage(NORMAL, __FILE__, __LINE__, "thread %d start to handle epolltimeout situation", get_tid());
     if (epollTimeoutCallBack_)
+    {
         epollTimeoutCallBack_(loop);
+    }
 }
 
 void TCPServer::setAcceptCallBack(std::function<void(SharedConnectionPointer)> acceptCallBack)

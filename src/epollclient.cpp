@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <vector>
 #include <unistd.h>
 #include <cstring>
 #include <sys/socket.h>
@@ -51,7 +52,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < 1; i++)
     {
         char buffer[BUFFERSIZE] = {0};
-        sprintf(buffer, "this is data which number is %d", i + 1);
+        snprintf(buffer, sizeof(buffer), "this is data which number is %d", i + 1);
         
         char tmp[BUFFERSIZE] = {0};
         int len = strlen(buffer);
@@ -68,9 +69,9 @@ int main(int argc, char *argv[])
         int len;
         myrecv(sockfd, &len, sizeof(int));
         cout << "len=" << len<<"--";
-        char recv_buf[len + 1] = {0}; // 这里一定要给recv_buf多留一个空字符的位置
-        myrecv(sockfd, recv_buf, len);
-        cout << "received reply msg from server:" << recv_buf << endl;
+        std::vector<char> recv_buf(len + 1, 0); // 使用 vector 替代 VLA
+        myrecv(sockfd, recv_buf.data(), len);
+        cout << "received reply msg from server:" << recv_buf.data() << endl;
     }
     sleep(100);//睡过100s再断开连接
 

@@ -9,7 +9,16 @@
 using namespace std;
 int createNonBlockingSocket()
 {
+#ifdef __APPLE__
+    int listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (listenfd >= 0)
+    {
+        int flags = fcntl(listenfd, F_GETFL, 0);
+        fcntl(listenfd, F_SETFL, flags | O_NONBLOCK);
+    }
+#else
     int listenfd = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+#endif
     if (listenfd < 0)
     {
         logger.logMessage(FATAL, __FILE__, __LINE__, "socket() failed");

@@ -3,32 +3,28 @@
 #include <unistd.h>
 #include <sys/syscall.h>
 #include <vector>
-ThreadPool::ThreadPool(size_t threadnum,std::string threadtype)
+ThreadPool::ThreadPool(size_t threadnum, std::string threadtype) : threadtype_(threadtype), stop_(false)
 {
-    // 启动threadnum个线程，将每个线程阻塞在条件变量上
+    // 启动threadnum个线程，每个线程都阻塞在条件变量上
     for (size_t i = 0; i < threadnum; i++)
     {
-        // emplace_back用于在容器末尾直接构造一个新元素，其会直接在内存中构造元素，避免了额外的临时对象创建和复制或移动操作
-        // 下面传入的是一个lambda函数，[捕获列表](参数列表)->返回类型{函数体};捕获列表定义可以访问的外部变量
-        threads_.emplace_back([this,threadtype]
+        // 用lambda表达式创建线程
+        threads_.emplace_back([this, threadtype]
                               {
-                                // 另一种获取线程ID的方式：包含unistd.h和sys/syscall.h之后，使用syscall(SYS_gittid)获取
-                                //推荐使用syscall(SYS_gettid)获取更合适，代码量更少，且两种方式获取的线程id的值不太一样，
-                                logger.logMessage(DEBUG, __FILE__, __LINE__, "%s created, thread id=%d",threadtype.c_str(), syscall(SYS_gettid));
+                                logger.logMessage(DEBUG, __FILE__, __LINE__, "%s created, thread id=%d",threadtype.c_str(), get_tid());
                                 while(stop_==false){
-                                    std::function<void()> task;
+                                    std::function<void()> task; 
                                     {
-                                        //锁作用域的开始
-                                        std::unique_lock<std::mutex> lock(this->mutex_);//互斥锁加锁
+                                        //在这个作用域内加锁，出了作用域自动解锁
+                                        std::unique_lock<std::mutex> lock(this->mutex_);
+                                        //等待生产者的条件变量
                                         this->condition_.wait(lock, [this]
-                                                              { return (this->stop_ == true) || this->taskqueue_.empty() == false; });
-                                        //在上面线程是因为stop_被置为true苏醒，现在到这里又发现任务队列为空，则立即返回退出
-                                        if(this->stop_==true && this->taskqueue_.empty()==true)
-                                            return;
-                                        //std::move函数主要用于将对象转换为右值引用，支持移动语义，这是为了避免拷贝带来的性能开销，使得task直接接管taskqueue_.front()
+                                                            { return this->stop_ || !this->taskqueue_.empty(); });
+                                        if(this->stop_ && this->taskqueue_.empty()) return;
                                         task = std::move(this->taskqueue_.front());
                                         this->taskqueue_.pop();
                                     }
+                                    logger.logMessage(DEBUG, __FILE__, __LINE__, "%s(%d) execute task",threadtype.c_str(), get_tid());
                                     task();
                                 } });
     }

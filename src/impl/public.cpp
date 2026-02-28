@@ -5,6 +5,22 @@
 #include <string>
 #include <iomanip>
 #include <sstream>
+#include <sys/syscall.h>
+#ifdef __APPLE__
+#include <pthread.h>
+#endif
+
+pid_t get_tid()
+{
+#ifdef __APPLE__
+    uint64_t tid;
+    pthread_threadid_np(NULL, &tid);
+    return (pid_t)tid;
+#else
+    return syscall(SYS_gettid);
+#endif
+}
+
 bool hasNewlineAtEnd(const char *buffer)
 {
     // 计算字符串的长度

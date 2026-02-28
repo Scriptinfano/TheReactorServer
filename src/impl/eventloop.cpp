@@ -1,12 +1,35 @@
 #include "eventloop.hpp"
 #include "log.hpp"
-#include <sys/syscall.h>
+#include "public.hpp"
 #include <unistd.h>
 #include <mutex>
-#include <sys/eventfd.h>
 #include <memory>
-EventLoop::EventLoop() : ep_(std::make_unique<Epoll>()), wakeupfd_(eventfd(0, EFD_NONBLOCK))
+#include <fcntl.h>
+#ifdef __linux__
+#include <sys/eventfd.h>
+#include <sys/syscall.h>
+#endif
+EventLoop::EventLoop() : ep_(std::make_unique<Epoll>())
 {
+#ifdef __APPLE__
+    int fds[2];
+    if (pipe(fds) < 0)
+    {
+        logger.logMessage(FATAL, __FILE__, __LINE__, "pipe() failed");
+        exit(-1);
+    }
+    wakeupfd_ = fds[0];
+    wakeupFdWrite_ = fds[1];
+    fcntl(wakeupfd_, F_SETFL, O_NONBLOCK);
+    fcntl(wakeupFdWrite_, F_SETFL, O_NONBLOCK);
+#else
+    wakeupfd_ = eventfd(0, EFD_NONBLOCK);
+    if (wakeupfd_ < 0)
+    {
+        logger.logMessage(FATAL, __FILE__, __LINE__, "eventfd() failed");
+        exit(-1);
+    }
+#endif
 }
 
 EventLoop::~EventLoop()
@@ -15,8 +38,8 @@ EventLoop::~EventLoop()
 
 void EventLoop::run()
 {
-    threadid_ = syscall(SYS_gettid);
-    logger.logMessage(DEBUG, __FILE__, __LINE__, "EventLoop::run() called, thread is %d", syscall(SYS_gettid));
+    threadid_ = get_tid();
+    logger.logMessage(DEBUG, __FILE__, __LINE__, "EventLoop::run() called, thread is %d", threadid_);
     while (true)
     {
         std::vector<Channel *> chans = ep_->loop(10 * 1000); // 开始等待就绪事件发生
@@ -46,7 +69,7 @@ void EventLoop::removeChannel(Channel *chan)
 }
 bool EventLoop::isIOThread()
 {
-    return threadid_ == syscall(SYS_gettid);
+    return threadid_ == get_tid();
 }
 
 void EventLoop::addTaskToQueue(std::function<void(std::string)> fn,std::string data)
@@ -63,12 +86,16 @@ void EventLoop::addTaskToQueue(std::function<void(std::string)> fn,std::string d
 void EventLoop::wakeup()
 {
     uint64_t val = 1; // eventfd计数器的值必须是一个uint64_t类型的整型
+#ifdef __APPLE__
+    write(wakeupFdWrite_, &val, sizeof(val));
+#else
     write(wakeupfd_, &val, sizeof(val));
+#endif
 }
 
 void EventLoop::handleWakeUp()
 {
-    logger.logMessage(DEBUG, __FILE__, __LINE__, "EventLoop::handleWakeUp() called, thread id is %d.", syscall(SYS_gettid));
+    logger.logMessage(DEBUG, __FILE__, __LINE__, "EventLoop::handleWakeUp() called, thread id is %d.", get_tid());
     uint64_t val;
     read(wakeupfd_, &val, sizeof(val)); // 读出wakeupfd_的值，如果不读取，那么这个值不会清零，相当于唤醒的闹铃声一直不关
     
